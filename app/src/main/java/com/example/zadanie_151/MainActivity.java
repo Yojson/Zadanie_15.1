@@ -8,6 +8,7 @@ import android.text.TextUtils;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -59,7 +60,9 @@ public class MainActivity extends AppCompatActivity {
 
         saveButton.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onClick(View v) { add_note(); }
+            public void onClick(View v) {
+                add_note();
+            }
         });
 
         deleteButton.setOnClickListener(new View.OnClickListener() {
@@ -70,14 +73,17 @@ public class MainActivity extends AppCompatActivity {
                     try {
                         long id = Long.parseLong(idStr);
                         delete_note(id);
-                    } catch (NumberFormatException ignored) {}
+                    } catch (NumberFormatException ignored) {
+                    }
                 }
             }
         });
 
         updateButton.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onClick(View v) { update_note(); }
+            public void onClick(View v) {
+                update_note();
+            }
         });
 
 
@@ -170,5 +176,16 @@ public class MainActivity extends AppCompatActivity {
         db.close();
 
         adapter.notifyDataSetChanged();
+
+        // ---- NEW PART: Show empty view if no data ----
+        TextView emptyView = findViewById(R.id.emptyView);
+
+        if (noteList.isEmpty()) {
+            recyclerView.setVisibility(View.GONE);
+            emptyView.setVisibility(View.VISIBLE);
+        } else {
+            recyclerView.setVisibility(View.VISIBLE);
+            emptyView.setVisibility(View.GONE);
+        }
     }
 }
