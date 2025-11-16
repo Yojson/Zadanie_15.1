@@ -31,7 +31,21 @@ public class NoteAdapter extends RecyclerView.Adapter<NoteAdapter.NoteViewHolder
 
     @Override
     public void onBindViewHolder(@NonNull NoteViewHolder holder, int position) {
-        holder.bind_note(notes.get(position));
+        final Note note = notes.get(position);
+        holder.bind_note(note);
+
+
+        holder.itemView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                // Defensive checks
+                if (note == null) return;
+                // Cast context to MainActivity and call delete_note
+                if (context instanceof MainActivity) {
+                    ((MainActivity) context).delete_note(note.getId());
+                }
+            }
+        });
     }
 
     @Override
@@ -56,9 +70,8 @@ public class NoteAdapter extends RecyclerView.Adapter<NoteAdapter.NoteViewHolder
                 return;
             }
             tv_note_id.setText("ID: " + note.getId());
-            // show title + content for clarity
-            String content = (note.getTitle() == null ? "" : note.getTitle() + " — ") +
-                    (note.getContent() == null ? "" : note.getContent());
+            String content = (note.getTitle() == null ? "" : note.getTitle() + " — ")
+                    + (note.getContent() == null ? "" : note.getContent());
             tv_note_content.setText(content);
         }
     }

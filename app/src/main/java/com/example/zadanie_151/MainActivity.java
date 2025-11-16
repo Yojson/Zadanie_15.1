@@ -8,9 +8,13 @@ import android.text.TextUtils;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
+import java.util.ArrayList;
+import java.util.List;
 
 
 public class MainActivity extends AppCompatActivity {
@@ -24,7 +28,11 @@ public class MainActivity extends AppCompatActivity {
     private Button saveButton;
     private Button deleteButton;
     private Button updateButton;
-    private TextView notesDisplay;
+
+
+    private RecyclerView recyclerView;
+    private NoteAdapter adapter;
+    private final List<Note> noteList = new ArrayList<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -32,6 +40,7 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         dbHelper = new DatabaseHelper(this);
+
 
         titleInput = findViewById(R.id.titleInput);
         noteInput = findViewById(R.id.noteInput);
@@ -41,7 +50,12 @@ public class MainActivity extends AppCompatActivity {
         saveButton = findViewById(R.id.saveButton);
         deleteButton = findViewById(R.id.deleteButton);
         updateButton = findViewById(R.id.updateButton);
-        notesDisplay = findViewById(R.id.notesDisplay);
+
+
+        recyclerView = findViewById(R.id.recyclerView);
+        recyclerView.setLayoutManager(new LinearLayoutManager(this));
+        adapter = new NoteAdapter(this, noteList);
+        recyclerView.setAdapter(adapter);
 
         saveButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -50,7 +64,15 @@ public class MainActivity extends AppCompatActivity {
 
         deleteButton.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onClick(View v) { delete_note(); }
+            public void onClick(View v) {
+                String idStr = deleteIdInput.getText().toString().trim();
+                if (!TextUtils.isEmpty(idStr)) {
+                    try {
+                        long id = Long.parseLong(idStr);
+                        delete_note(id);
+                    } catch (NumberFormatException ignored) {}
+                }
+            }
         });
 
         updateButton.setOnClickListener(new View.OnClickListener() {
@@ -58,8 +80,10 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View v) { update_note(); }
         });
 
+
         load_notes();
     }
+
 
     private void add_note() {
         String titleText = titleInput.getText().toString().trim();
@@ -82,21 +106,6 @@ public class MainActivity extends AppCompatActivity {
         load_notes();
     }
 
-    private void delete_note() {
-        String idToDelete = deleteIdInput.getText().toString().trim();
-        if (TextUtils.isEmpty(idToDelete)) {
-            return;
-        }
-
-        SQLiteDatabase db = dbHelper.getWritableDatabase();
-        db.delete(DatabaseHelper.TABLE_NOTES,
-                DatabaseHelper.COLUMN_ID + " = ?",
-                new String[]{idToDelete});
-        db.close();
-
-        deleteIdInput.setText("");
-        load_notes();
-    }
 
     private void update_note() {
         String idToUpdate = updateIdInput.getText().toString().trim();
@@ -121,9 +130,21 @@ public class MainActivity extends AppCompatActivity {
         load_notes();
     }
 
-    private void load_notes() {
-        SQLiteDatabase db = dbHelper.getReadableDatabase();
+    public void delete_note(long id) {
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+        db.delete(DatabaseHelper.TABLE_NOTES,
+                DatabaseHelper.COLUMN_ID + " = ?",
+                new String[]{String.valueOf(id)});
+        db.close();
 
+
+        load_notes();
+    }
+
+    private void load_notes() {
+        noteList.clear();
+
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
         String[] projection = {
                 DatabaseHelper.COLUMN_ID,
                 DatabaseHelper.COLUMN_TITLE,
@@ -137,20 +158,17 @@ public class MainActivity extends AppCompatActivity {
                 DatabaseHelper.COLUMN_ID + " DESC"
         );
 
-        StringBuilder notes = new StringBuilder();
         if (cursor != null) {
             while (cursor.moveToNext()) {
                 int id = cursor.getInt(cursor.getColumnIndexOrThrow(DatabaseHelper.COLUMN_ID));
                 String title = cursor.getString(cursor.getColumnIndexOrThrow(DatabaseHelper.COLUMN_TITLE));
                 String note = cursor.getString(cursor.getColumnIndexOrThrow(DatabaseHelper.COLUMN_NOTE));
-                notes.append("ID: ").append(id).append("\n")
-                        .append("Tytuł: ").append(title).append("\n")
-                        .append("Treść: ").append(note).append("\n\n");
+                noteList.add(new Note(id, title, note));
             }
             cursor.close();
         }
         db.close();
 
-        notesDisplay.setText(notes.toString());
+        adapter.notifyDataSetChanged();
     }
 }
